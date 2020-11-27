@@ -38,7 +38,7 @@
         <div class="box-compon" id="fill" @click="tool('fill')">
           <img src="https://img.icons8.com/dusk/64/000000/fill-color.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
-        <input id="input" type="color" value="#ffffff"/>
+        <input id="colorPick" type="color"/>
         <canvas id="my-canvas" width="1290" height="612" ></canvas>
     </div>
     </div>
@@ -57,7 +57,7 @@ export default {
    dragging:false,
    //Arrays to held App's shapes
    shapes:[],shapedRedo:[],
-   fillColor:'#ffffff',borderColor:'#000000',
+   fillColor:null,borderColor:'#000000',
    linwidth:2,canvasWidth:1290,canvasHeight:612,
    bounds:{
      x:0,y:0,width:0,height:0
@@ -89,7 +89,14 @@ export default {
       //backend stuff
       this.redo();
       }
+      else if(selectedTool==='save'){
+      //some stuff
+      }
+      else if(selectedTool==='load'){
+      //some stuff
+      }
     },
+    
     undo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
@@ -118,6 +125,7 @@ export default {
       this.bounds.y=(pointt.y>this.mousedown.y)?
       this.mousedown.y:pointt.y;
     },
+
     setMouseDown:function(event){
       this.canvas.style.cursor="crosshair"; 
       this.loc = this.getPosition(event.clientX,event.clientY);
@@ -126,26 +134,25 @@ export default {
       this.mousedown.x=this.loc.x;
       this.mousedown.y=this.loc.y;
       this.dragging=true;
-      //this.fillColor="#ffffff";
       if(this.shapes.length>0){
         //adjust draging
         this.dragging=!(this.current==='fill'||this.current==='delete'||
                          this.current==='copy'||this.current==='resize')
         if(this.current==='fill'){
         //backend stuff
-        //let shape_=getShapeBack(this.mousedown)
-        //this.setColor(shape_,this.fillColor);
+        //let shape_=this.getShapeBack(this.mousedown)
+        //this.setColor(shape_,this.fillColor.value);
         //this.displayShapes();
       }
         else if(this.current==='delete'){
         //backend stuff
-        //let shape_=getShapeBack(this.mousedown)
+        //let shape_=this.getShapeBack(this.mousedown)
         //this.deleteShape(shape_);
         //this.displayShapes();
       }
         else if(this.current==='resize'){
         //backend stuff
-        //let shape_=getShapeBack(this.mousedown)
+        //let shape_=this.getShapeBack(this.mousedown)
         //somestuff
         //let shape_2=//somestuff
         //this.resizeShape(shape_2);
@@ -183,6 +190,7 @@ export default {
         }
       }}
       },
+
       resizeShape:function(shape_){
       if(shape_!=null){
       let ID =shape_.id;
@@ -412,12 +420,22 @@ export default {
       this.canvas.addEventListener("mousedown", this.setMouseDown);
       this.canvas.addEventListener("mousemove", this.setMouseMove);
       this.canvas.addEventListener("mouseup", this.setMouseUp);
+      this.fillColor=document.getElementById('colorPick');
+      //start with initial value 
+      this.fillColor.value='#ffffff'
+      this.fillColor.addEventListener("change", this._updateAll, false);
     }
+},
+
+//update color after dismiss the cursor
+_updateAll:function(event) {
+    this.fillColor.value = event.target.value;
 },
 
 mounted(){
   document.addEventListener('DOMContentLoaded',this.setupCanvas);
-  this.fillColor=document.getElementById('input').value;
+
+
 }
 }
 
@@ -464,7 +482,7 @@ mounted(){
     background-color:rgb(114, 0, 155);
 }
 
-input[type=color]{
+#colorPick[type=color]{
     position: relative;
     float: right;
     width: 2.6%;
@@ -480,6 +498,4 @@ input[type=color]{
 }
 
 </style>
-
-
 
