@@ -126,8 +126,73 @@ export default {
       this.mousedown.x=this.loc.x;
       this.mousedown.y=this.loc.y;
       this.dragging=true;
-      this.fillColor="#ffffff";
+      //this.fillColor="#ffffff";
+      if(this.shapes.length>0){
+        //adjust draging
+        this.dragging=!(this.current==='fill'||this.current==='delete'||
+                         this.current==='copy'||this.current==='resize')
+        if(this.current==='fill'){
+        //backend stuff
+        //let shape_=getShapeBack(this.mousedown)
+        //this.setColor(shape_,this.fillColor);
+        //this.displayShapes();
+      }
+        else if(this.current==='delete'){
+        //backend stuff
+        //let shape_=getShapeBack(this.mousedown)
+        //this.deleteShape(shape_);
+        //this.displayShapes();
+      }
+        else if(this.current==='resize'){
+        //backend stuff
+        //let shape_=getShapeBack(this.mousedown)
+        //somestuff
+        //let shape_2=//somestuff
+        //this.resizeShape(shape_2);
+        //this.displayShapes();
+        //this.resizeBack();
+      }
+      
+      }
     },
+      //get the shape corresponding to mousedown click 
+      //backend stuff
+      //////getShapeBack:function(_location){
+      //////},
+      //set color for a shape
+      setColor:function(shape_,color_){
+      //check if there was a shape from backend
+      if(shape_!=null){
+      let ID =shape_.id;
+      for(let i=0;i<this.shapes.length;i++){
+        if(ID===this.shapes[i].id){
+          this.shapes[i]._color=color_;
+          break;
+        }
+      }
+      return null;}
+      },
+      //delete a returned shape if found
+      deleteShape:function(shape_){
+      if(shape_!=null){
+      let ID =shape_.id;
+      for(let i=0;i<this.shapes.length;i++){
+        if(ID===this.shapes[i].id){
+          this.shapes.splice(i,1);
+          break;
+        }
+      }}
+      },
+      resizeShape:function(shape_){
+      if(shape_!=null){
+      let ID =shape_.id;
+      for(let i=0;i<this.shapes.length;i++){
+        if(ID===this.shapes[i].id){
+          this.shapes[i]=shape_;
+          break;
+        }
+      }}
+      },
     setMouseMove: function(event){
       this.canvas.style.cursor="crosshair";
       this.loc = this.getPosition(event.clientX,event.clientY);
@@ -141,6 +206,7 @@ export default {
       this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
       ////////////////////////////////////////////////////////////////
       for(let i=0;i<this.shapes.length;i++){
+      this.colorShape(this.shapes[i]);
       let typ=this.shapes[i].type;
       let dims=this.shapes[i].dim;
       let _mouseup=this.shapes[i].mouse_up;
@@ -182,7 +248,6 @@ export default {
         this.ctx.stroke();
       }
       //update
-      this.colorShape(this.shapes[i]);
       this.SaveCanvasImage();
       this.RedrawCanvasImage();
       }
@@ -271,14 +336,14 @@ export default {
         this.ctx.beginPath();
 
         this.ctx.ellipse(this.mousedown.x,this.mousedown.y,
-                        radiusX, radiusY, 0, 0, Math.PI * 2);
+                      radiusX, radiusY, 0, 0, Math.PI * 2);
         this.ctx.stroke();//////////////
       } 
 
       else if(this.current === "triangle"){
         let polypoints = [{x:this.bounds.x+(this.bounds.width/2),y:this.bounds.y},
-        {x:this.bounds.x,y:this.bounds.y+this.bounds.height},
-        {x:this.bounds.x+this.bounds.width,y:this.bounds.y+this.bounds.height}];
+                             {x:this.bounds.x,y:this.bounds.y+this.bounds.height},
+          {x:this.bounds.x+this.bounds.width,y:this.bounds.y+this.bounds.height}];
         this.ctx.beginPath();
         this.ctx.moveTo(polypoints[0].x, polypoints[0].y);
        //attach all the points of the triangle 
@@ -291,33 +356,34 @@ export default {
       },
       //implement the property inside a shape
       colorShape:function(_shape){
+
       //set color for fill
       //check shape dimensions
-      if(_shape.color!='#ffffff'&&(_shape.dim.width>this.linwidth&&_shape.dim.height>this.linwidth)){
+      if(_shape._color!='#ffffff'){
       this.ctx.fillStyle=_shape._color;
         if(_shape.type==='rectangle'){
-        this.ctx.fillRect(_shape.dim.x+this.linwidth/2,_shape.dim.y+this.linwidth/2,
-                    _shape.dim.width-this.linwidth,_shape.dim.height-this.linwidth);
+        this.ctx.fillRect(_shape.dim.x,_shape.dim.y,
+                _shape.dim.width,_shape.dim.height);
         }
         else if(_shape.type==='circle'){
         let radius=_shape.dim.width;
         this.ctx.beginPath();
         this.ctx.arc(_shape.mouse_down.x,_shape.mouse_down.y,
-                          radius-this.linwidth,0,Math.PI *2);
-        this.ctx.fill();
+        radius,0,Math.PI *2);
+             this.ctx.fill();
         }
         else if(_shape.type==='ellipse'){
         let radiusX = _shape.dim.width;
         let radiusY = _shape.dim.height;
         this.ctx.beginPath();
-        this.ctx.ellipse(_shape.mouse_down.x,_shape.mouse_down.y,radiusX-this.linwidth/2,
-                                              radiusY-this.linwidth/2,0, 0, Math.PI * 2);
-        this.ctx.fill(); 
+        this.ctx.ellipse(_shape.mouse_down.x,_shape.mouse_down.y,radiusX,
+        radiusY,0, 0, Math.PI * 2);
+                   this.ctx.fill(); 
         }
         else if(_shape.type==='triangle'){
-          let polypoints = [{x:_shape.dim.x+(_shape.dim.width/2),y:(_shape.dim.y)+this.linwidth},
-        {x:_shape.dim.x+this.linwidth/2,y:_shape.dim.y+_shape.dim.height-this.linwidth/2},
-        {x:_shape.dim.x+_shape.dim.width-this.linwidth/2,y:_shape.dim.y+_shape.dim.height-this.linwidth/2}];
+        let polypoints = [{x:_shape.dim.x+_shape.dim.width/2,y:_shape.dim.y},
+                           {x:_shape.dim.x,y:_shape.dim.y+_shape.dim.height},
+         {x:_shape.dim.x+_shape.dim.width,y:_shape.dim.y+_shape.dim.height}];
         this.ctx.beginPath();
         this.ctx.moveTo(polypoints[0].x, polypoints[0].y);
        //attach all the points of the triangle 
@@ -325,7 +391,7 @@ export default {
         this.ctx.lineTo(polypoints[i].x, polypoints[i].y);
         }
         this.ctx.closePath();
-        this.ctx.fill();
+             this.ctx.fill();
     }}
     },
     SaveCanvasImage:function(){
@@ -414,18 +480,6 @@ input[type=color]{
 }
 
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
