@@ -11,7 +11,7 @@
         <div class="box-compon" id="redo" @click="tool('redo')">
           <img src="https://img.icons8.com/nolan/64/redo.png" style="height:58%;position: relative;margin:13%;"/>
         </div>
-        <div class="box-compon" id="segLine" @click="tool('segLine')">
+        <div class="box-compon" id="line" @click="tool('line')">
           <img src="https://img.icons8.com/dusk/64/000000/line.png" style="height:58%;position: relative;margin:13%;"/>
         </div>
         <div class="box-compon" id="triangle" @click="tool('triangle')">
@@ -36,38 +36,29 @@
 export default {
    name: 'app',
    data:function(){return{current:'',canvas:'',
-   mouseup:{x:0,y:0},ctx:'',savedImageData:'',
-   dragging:false,shapes:[],shapedRedo:[],
-   mousedown:{x:0,y:0},
-   fillColor:'white',borderColor:'black',
+   //mouse location
+   mouseup:{x:0,y:0},mousedown:{x:0,y:0},
+   //current location of the mouse
    loc:{x:0,y:0},
-   linwidth:2,canvasWidth:990,canvasHeight:612,scc:'',
+   ///////////////////////////////
+   ctx:'',savedImageData:'',
+   dragging:false,
+   //Arrays to held App's shapes
+   shapes:[],shapedRedo:[],
+   fillColor:'white',borderColor:'black',
+   linwidth:2,canvasWidth:990,canvasHeight:612,
    bounds:{
      x:0,y:0,width:0,height:0
    },
-    mouseDownTrack:{
-      constructor:function(x,y){
-        this.x=x;
-        this.y=y;
-        return this;
-      }
-    },
-    mouseLocation:{
-      constructor:function(x,y){
-        this.x=x;
-        this.y=y;
-        return this;
-      }
-    },
-
    }},
    methods: {
     tool: function(selectedTool) {
+      //highlighted the selected button
       document.getElementById("save").className = "box-compon";
       document.getElementById("load").className = "box-compon";
       document.getElementById("undo").className = "box-compon";
       document.getElementById("redo").className = "box-compon";
-      document.getElementById("segLine").className = "box-compon";
+      document.getElementById("line").className = "box-compon";
       document.getElementById("triangle").className = "box-compon";
       document.getElementById("rectangle").className = "box-compon";
       document.getElementById("circle").className = "box-compon";
@@ -75,23 +66,30 @@ export default {
       document.getElementById(selectedTool).className = "box-compon-selected";
       this.current = selectedTool;
       if(selectedTool==='undo'){
+      //backend stuff
       this.undo();
       }
       else if(selectedTool==='redo'){
+      //backend stuff
       this.redo();
       }
     },
     undo:function(){
+        /////////////////////////////////////////////////////////////
+        //backend stuff
         if(this.shapes.length>0){
         this.shapedRedo.push(this.shapes.pop())}
         this.displayShapes();
     },
     redo:function(){
+        /////////////////////////////////////////////////////////////
+        //backend stuff
         if(this.shapedRedo.length>0){
         this.shapes.push(this.shapedRedo.pop())}
         this.displayShapes();
     },
     setupCanvas: function() {
+      //set all the stuff
       this.canvas = document.getElementById('my-canvas');
       this.ctx = this.canvas.getContext('2d');
       this.ctx.strokeStyle = this.borderColor;
@@ -100,7 +98,7 @@ export default {
       this.canvas.addEventListener("mousemove", this.setMouseMove);
       this.canvas.addEventListener("mouseup", this.setMouseUp);
     },
-    
+    //get position relative to cavan's panel
     getPosition: function(x,y){
       let cav= this.canvas.getBoundingClientRect(); 
       return {x:(x-cav.left),y:(y-cav.top)}
@@ -132,14 +130,18 @@ export default {
         this.updateboundsActive(this.loc);
       }
     },displayShapes:function(){
+      //get an array on shapes and display them
       this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+      ////////////////////////////////////////////////////////////////
       for(let i=0;i<this.shapes.length;i++){
       let typ=this.shapes[i].type;
       let dims=this.shapes[i].dim;
+      let _mouseup=this.shapes[i].mouse_up;
+      let _mousedown=this.shapes[i].mouse_down;
       if(typ==='line'){
         this.ctx.beginPath();
-        this.ctx.moveTo(dims.x,dims.y);
-        this.ctx.lineTo((dims.x+dims.width),(dims.y+dims.height));
+        this.ctx.moveTo(_mousedown.x,_mousedown.y);
+        this.ctx.lineTo(_mouseup.x,_mouseup.y);
         this.ctx.stroke();
       }
       else if(typ==='triangle'){
@@ -161,7 +163,7 @@ export default {
       else if(typ==='circle'){
         let radius=dims.width;
         this.ctx.beginPath();
-        this.ctx.arc(dims.x,dims.y,radius,0,Math.PI *2);
+        this.ctx.arc(_mousedown.x,_mousedown.y,radius,0,Math.PI *2);
         this.ctx.stroke();
       }
 
@@ -169,46 +171,63 @@ export default {
         let radiusX = dims.width;
         let radiusY = dims.height;
         this.ctx.beginPath();
-        this.ctx.ellipse(dims.x,dims.y, radiusX, radiusY, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(_mousedown.x,_mousedown.y, radiusX, radiusY, 0, 0, Math.PI * 2);
         this.ctx.stroke();
       }
+      //update
       this.SaveCanvasImage();
       this.RedrawCanvasImage();
       }
       },
-      insertShape:function(){
-      if((this.mouseup.x!=this.mousedown.x || this.mouseup.y!=this.mousedown.y)){
-        //id-color 
-        let dimCloned=Object.assign({},this.bounds)
-      if(this.current==='segLine'){
-        this.shapes.push({dim:dimCloned,type:'line'});
-      }
-      else if(this.current==='triangle'){
-        this.shapes.push({dim:dimCloned,type:'triangle'});
-      }
-      else if(this.current==='rectangle'){
-        this.shapes.push({dim:dimCloned,type:'rectangle'});
-      }
-      else if(this.current==='circle'){
-        this.shapes.push({dim:dimCloned,type:'circle'});
-      }
-      else if(this.current==='ellipse'){
-        this.shapes.push({dim:dimCloned,type:'ellipse'});
-      }
-      }
-    },
     setMouseUp: function(event){
       this.canvas.style.cursor="default";
       this.loc = this.getPosition(event.clientX,event.clientY);
       this.SaveCanvasImage();
       this.RedrawCanvasImage();
       this.updatebounds(this.loc);
+      this.mouseup=this.loc;
       ////////////////////////////////////////////////////////
       this.dragging=false;
+      //insert shapes and sent them to backend
       this.insertShape();
-      /////////////////
+      ////////////////////////////////////////////////////////
+      //////////////send to backend///////////////
+      //let _shape=this.getShape();
+      //this.__sendBack(_shape);
+    },
+      //get a shape object from current data
+      //shape on format of {dim:x,y upperleft,width,height of the bounding box,type,id,mouseup,mousedown}
+      getShape:function(){
+        let dimCloned=Object.assign({},this.bounds);
+        let _mouseup=Object.assign({},this.mouseup);
+        let _mousedown=Object.assign({},this.mousedown);
+        let _id=this.getID();
+        let _type=this.current;
+        return {dim:dimCloned,type:_type,id:_id,mouse_up:_mouseup,mouse_down:_mousedown}
+      },
+      insertShape:function(){
+      if((this.mouseup.x!=this.mousedown.x || this.mouseup.y!=this.mousedown.y)){
+        //id-color
+        this.shapes.push(this.getShape())
+      }
+    },
+    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
+    __sendBack:function(_shape){
+    ////////////backend
+    },
+    getID:function(){
+      //start with random number
+      let ID=Math.floor(Math.random()*1000000);
+      //check all ID's
+      this.shapes.forEach(elem => {
+        while(elem.id===ID){
+        ID=Math.floor(Math.random()*1000000);}
+      })
+      return ID;
     },
     updateboundsActive: function(locati){
+       //live update while moving
        this.updatebounds(locati);
        this.drawShape();
     },
@@ -216,15 +235,15 @@ export default {
       this.ctx.strokeStyle=this.borderColor;
       this.ctx.fillStyle=this.fillColor;
       this.ctx.lineWidth = this.linwidth;
+        ////////////////////////////////////////////
       if(this.current==='rectangle'){
       this.ctx.strokeRect(this.bounds.x,this.bounds.y,this.bounds.width,this.bounds.height);}
-      else if(this.current==='segLine'){
+      else if(this.current==='line'){
         //Draw Line
         this.ctx.beginPath();
         this.ctx.moveTo(this.mousedown.x,this.mousedown.y);
         this.ctx.lineTo(this.loc.x, this.loc.y);
         this.ctx.stroke();
-
       }
 
       else if(this.current==='circle'){
@@ -250,7 +269,7 @@ export default {
         {x:this.bounds.x+this.bounds.width,y:this.bounds.y+this.bounds.height}];
         this.ctx.beginPath();
         this.ctx.moveTo(polypoints[0].x, polypoints[0].y);
-
+       //attach all the points of the triangle 
        for(let i = 1; i < 3; i++){
         this.ctx.lineTo(polypoints[i].x, polypoints[i].y);
        }
@@ -268,9 +287,8 @@ export default {
     this.ctx.putImageData(this.savedImageData,0,0);}
     ////////////////////////////////
 },
+
 mounted(){
-  this.mouseDownTrack=this.mouseDownTrack.constructor(0,0)
-  this.mouseLocation=this.mouseLocation.constructor(0,0)
   document.addEventListener('DOMContentLoaded',this.setupCanvas)
 }
 }
@@ -305,7 +323,6 @@ mounted(){
     border-radius: 15px 30px;
 }
 
-
 .box-compon{
   background-color: rgb(85, 0, 99);
 }
@@ -334,6 +351,10 @@ input[type=color]{
     border-radius: 0px 0px 10px 20px;
 }
 </style>
+
+
+
+
 
 
 
