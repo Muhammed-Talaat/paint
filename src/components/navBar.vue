@@ -26,8 +26,20 @@
         <div class="box-compon" id="ellipse" @click="tool('ellipse')">
           <img src="https://img.icons8.com/color/48/000000/ellipse.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
-        <input type="color"/>
-        <canvas id="my-canvas" width="990" height="612" margin="auto"></canvas>
+        <div class="box-compon" id="copy" @click="tool('copy')">
+          <img src="https://img.icons8.com/dusk/64/000000/copy.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
+        <div class="box-compon" id="resize" @click="tool('resize')">
+          <img src="https://img.icons8.com/nolan/64/resize.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
+        <div class="box-compon" id="delete" @click="tool('delete')">
+          <img src="https://img.icons8.com/dusk/64/000000/delete-forever.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
+        <div class="box-compon" id="fill" @click="tool('fill')">
+          <img src="https://img.icons8.com/dusk/64/000000/fill-color.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
+        <input id="input" type="color" value="#ffffff"/>
+        <canvas id="my-canvas" width="1290" height="612" ></canvas>
     </div>
     </div>
 </template>
@@ -45,8 +57,8 @@ export default {
    dragging:false,
    //Arrays to held App's shapes
    shapes:[],shapedRedo:[],
-   fillColor:'white',borderColor:'black',
-   linwidth:2,canvasWidth:990,canvasHeight:612,
+   fillColor:'#ffffff',borderColor:'#000000',
+   linwidth:2,canvasWidth:1290,canvasHeight:612,
    bounds:{
      x:0,y:0,width:0,height:0
    },
@@ -63,6 +75,10 @@ export default {
       document.getElementById("rectangle").className = "box-compon";
       document.getElementById("circle").className = "box-compon";
       document.getElementById("ellipse").className = "box-compon";
+      document.getElementById("copy").className = "box-compon";
+      document.getElementById("resize").className = "box-compon";
+      document.getElementById("delete").className = "box-compon";
+      document.getElementById("fill").className = "box-compon";
       document.getElementById(selectedTool).className = "box-compon-selected";
       this.current = selectedTool;
       if(selectedTool==='undo'){
@@ -88,16 +104,6 @@ export default {
         this.shapes.push(this.shapedRedo.pop())}
         this.displayShapes();
     },
-    setupCanvas: function() {
-      //set all the stuff
-      this.canvas = document.getElementById('my-canvas');
-      this.ctx = this.canvas.getContext('2d');
-      this.ctx.strokeStyle = this.borderColor;
-      this.ctx.lineWidth = this.linwidth;
-      this.canvas.addEventListener("mousedown", this.setMouseDown);
-      this.canvas.addEventListener("mousemove", this.setMouseMove);
-      this.canvas.addEventListener("mouseup", this.setMouseUp);
-    },
     //get position relative to cavan's panel
     getPosition: function(x,y){
       let cav= this.canvas.getBoundingClientRect(); 
@@ -120,6 +126,7 @@ export default {
       this.mousedown.x=this.loc.x;
       this.mousedown.y=this.loc.y;
       this.dragging=true;
+      this.fillColor="#ffffff";
     },
     setMouseMove: function(event){
       this.canvas.style.cursor="crosshair";
@@ -175,6 +182,7 @@ export default {
         this.ctx.stroke();
       }
       //update
+      this.colorShape(this.shapes[i]);
       this.SaveCanvasImage();
       this.RedrawCanvasImage();
       }
@@ -190,21 +198,24 @@ export default {
       this.dragging=false;
       //insert shapes and sent them to backend
       this.insertShape();
+      //update color
       ////////////////////////////////////////////////////////
       //////////////send to backend///////////////
       //let _shape=this.getShape();
       //this.__sendBack(_shape);
     },
       //get a shape object from current data
-      //shape on format of {dim:x,y upperleft,width,height of the bounding box,type,id,mouseup,mousedown}
+      //shape on format of {dim:x,y upperleft,width,height of the bounding box,type,id,color,mouseup,mousedown}
       getShape:function(){
         let dimCloned=Object.assign({},this.bounds);
         let _mouseup=Object.assign({},this.mouseup);
         let _mousedown=Object.assign({},this.mousedown);
         let _id=this.getID();
         let _type=this.current;
-        return {dim:dimCloned,type:_type,id:_id,mouse_up:_mouseup,mouse_down:_mousedown}
-      },
+        //start with white as a default color
+        return {dim:dimCloned,type:_type,id:_id,
+                    _color:'#ffffff',mouse_up:_mouseup,mouse_down:_mousedown}
+       },
       insertShape:function(){
       if((this.mouseup.x!=this.mousedown.x || this.mouseup.y!=this.mousedown.y)){
         //id-color
@@ -213,7 +224,7 @@ export default {
     },
     ////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////
-    __sendBack:function(_shape){
+    __sendBack:function(/*_shape*/){
     ////////////backend
     },
     getID:function(){
@@ -233,11 +244,12 @@ export default {
     },
     drawShape: function(){
       this.ctx.strokeStyle=this.borderColor;
-      this.ctx.fillStyle=this.fillColor;
       this.ctx.lineWidth = this.linwidth;
         ////////////////////////////////////////////
       if(this.current==='rectangle'){
-      this.ctx.strokeRect(this.bounds.x,this.bounds.y,this.bounds.width,this.bounds.height);}
+      this.ctx.strokeRect(this.bounds.x,this.bounds.y,this.bounds.width,this.bounds.height);
+      //color in 129////////////
+      }
       else if(this.current==='line'){
         //Draw Line
         this.ctx.beginPath();
@@ -251,7 +263,7 @@ export default {
         this.ctx.beginPath();
         this.ctx.arc(this.mousedown.x,this.mousedown.y,
                                       radius,0,Math.PI *2);
-        this.ctx.stroke();
+        this.ctx.stroke();//////////////
       }
       else if(this.current === "ellipse"){
         let radiusX = this.bounds.width;
@@ -260,7 +272,7 @@ export default {
 
         this.ctx.ellipse(this.mousedown.x,this.mousedown.y,
                         radiusX, radiusY, 0, 0, Math.PI * 2);
-        this.ctx.stroke();
+        this.ctx.stroke();//////////////
       } 
 
       else if(this.current === "triangle"){
@@ -276,6 +288,45 @@ export default {
         this.ctx.closePath();
         this.ctx.stroke();
       }
+      },
+      //implement the property inside a shape
+      colorShape:function(_shape){
+      //set color for fill
+      //check shape dimensions
+      if(_shape.color!='#ffffff'&&(_shape.dim.width>this.linwidth&&_shape.dim.height>this.linwidth)){
+      this.ctx.fillStyle=_shape._color;
+        if(_shape.type==='rectangle'){
+        this.ctx.fillRect(_shape.dim.x+this.linwidth/2,_shape.dim.y+this.linwidth/2,
+                    _shape.dim.width-this.linwidth,_shape.dim.height-this.linwidth);
+        }
+        else if(_shape.type==='circle'){
+        let radius=_shape.dim.width;
+        this.ctx.beginPath();
+        this.ctx.arc(_shape.mouse_down.x,_shape.mouse_down.y,
+                          radius-this.linwidth,0,Math.PI *2);
+        this.ctx.fill();
+        }
+        else if(_shape.type==='ellipse'){
+        let radiusX = _shape.dim.width;
+        let radiusY = _shape.dim.height;
+        this.ctx.beginPath();
+        this.ctx.ellipse(_shape.mouse_down.x,_shape.mouse_down.y,radiusX-this.linwidth/2,
+                                              radiusY-this.linwidth/2,0, 0, Math.PI * 2);
+        this.ctx.fill(); 
+        }
+        else if(_shape.type==='triangle'){
+          let polypoints = [{x:_shape.dim.x+(_shape.dim.width/2),y:(_shape.dim.y)+this.linwidth},
+        {x:_shape.dim.x+this.linwidth/2,y:_shape.dim.y+_shape.dim.height-this.linwidth/2},
+        {x:_shape.dim.x+_shape.dim.width-this.linwidth/2,y:_shape.dim.y+_shape.dim.height-this.linwidth/2}];
+        this.ctx.beginPath();
+        this.ctx.moveTo(polypoints[0].x, polypoints[0].y);
+       //attach all the points of the triangle 
+        for(let i = 1; i < 3; i++){
+        this.ctx.lineTo(polypoints[i].x, polypoints[i].y);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+    }}
     },
     SaveCanvasImage:function(){
     //Save image
@@ -284,12 +335,23 @@ export default {
 
     RedrawCanvasImage:function(){
     //Restore image
-    this.ctx.putImageData(this.savedImageData,0,0);}
+    this.ctx.putImageData(this.savedImageData,0,0);},
     ////////////////////////////////
+    setupCanvas: function() {
+      //set all the stuff
+      this.canvas = document.getElementById('my-canvas');
+      this.ctx = this.canvas.getContext('2d');
+      this.ctx.strokeStyle = this.borderColor;
+      this.ctx.lineWidth = this.linwidth;
+      this.canvas.addEventListener("mousedown", this.setMouseDown);
+      this.canvas.addEventListener("mousemove", this.setMouseMove);
+      this.canvas.addEventListener("mouseup", this.setMouseUp);
+    }
 },
 
 mounted(){
-  document.addEventListener('DOMContentLoaded',this.setupCanvas)
+  document.addEventListener('DOMContentLoaded',this.setupCanvas);
+  this.fillColor=document.getElementById('input').value;
 }
 }
 
@@ -301,7 +363,7 @@ mounted(){
 
 .box{
     height:80px;
-    width: 1000px;
+    width: 1300px;
     background-image: linear-gradient(rgb(70, 0, 72), rgb(52, 0, 51), rgb(76, 0, 73));
     border-radius: 15px 30px 0px 0px;
     box-shadow: 6px 6px 6px rgb(177, 0, 153) inset;
@@ -312,7 +374,7 @@ mounted(){
 .box-compon,.box-compon-selected{
     position: relative;
     float: left;
-    width: 9.79%;
+    width: 6.8%;
     height: 91%;
     margin: 3px 3px;
     text-align: center;
@@ -339,9 +401,9 @@ mounted(){
 input[type=color]{
     position: relative;
     float: right;
-    width: 3.38%;
+    width: 2.6%;
     height: 46%;
-    margin: 2% 1.36%;
+    margin: 1.56% 1.36%;
     text-align: center;
     padding: 0px 0px;
 }
@@ -350,15 +412,8 @@ input[type=color]{
     border: 5px solid  rgb(52, 0, 51) ;
     border-radius: 0px 0px 10px 20px;
 }
+
 </style>
-
-
-
-
-
-
-
-
 
 
 
