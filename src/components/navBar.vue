@@ -32,14 +32,17 @@
         <div class="box-compon" id="resize" @click="tool('resize')">
           <img src="https://img.icons8.com/nolan/64/resize.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
+        <div class="box-compon" id="move" @click="tool('move')">
+          <img src="https://img.icons8.com/nolan/64/move.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
         <div class="box-compon" id="delete" @click="tool('delete')">
           <img src="https://img.icons8.com/dusk/64/000000/delete-forever.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
         <div class="box-compon" id="fill" @click="tool('fill')">
           <img src="https://img.icons8.com/dusk/64/000000/fill-color.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
-        <input id="colorPick" type="color"/>
-        <canvas id="my-canvas" width="1290" height="612" ></canvas>
+        <input id="colorPick" type="color" />
+        <canvas id="my-canvas" width="1320" height="612" ></canvas>
     </div>
     </div>
 </template>
@@ -47,7 +50,9 @@
 
 export default {
    name: 'app',
-   data:function(){return{current:'',canvas:'',
+   data:function(){return{current:'',canvas:'',URL:'http://localhost:8080',
+   //current shape for move/resize/copy
+   shapeInActionLocation:-1,
    //mouse location
    mouseup:{x:0,y:0},mousedown:{x:0,y:0},
    //current location of the mouse
@@ -58,7 +63,7 @@ export default {
    //Arrays to held App's shapes
    shapes:[],shapedRedo:[],
    fillColor:null,borderColor:'#000000',
-   linwidth:2,canvasWidth:1290,canvasHeight:612,
+   linwidth:2,canvasWidth:1320,canvasHeight:612,
    bounds:{
      x:0,y:0,width:0,height:0
    },
@@ -77,6 +82,7 @@ export default {
       document.getElementById("ellipse").className = "box-compon";
       document.getElementById("copy").className = "box-compon";
       document.getElementById("resize").className = "box-compon";
+      document.getElementById("move").className = "box-compon";
       document.getElementById("delete").className = "box-compon";
       document.getElementById("fill").className = "box-compon";
       document.getElementById(selectedTool).className = "box-compon-selected";
@@ -96,18 +102,29 @@ export default {
       //some stuff
       }
     },
-    
+
     undo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
         if(this.shapes.length>0){
+        //report the undo process to the backend
+        //let url=this.URL+'/paintapp/undo'
+        /*fetch(url).then(
+                      response => { return response.json();})*/
+        //perform the operation in the frontend
         this.shapedRedo.push(this.shapes.pop())}
         this.displayShapes();
+        console.log("aaa"+this.shapes.length+' '+this.shapes);
     },
     redo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
         if(this.shapedRedo.length>0){
+        //report the redo process to the backend
+        //let url=this.URL+'/paintapp/redo'
+        /*fetch(url).then(
+                      response => { return response.json(); })*/
+        //perform the operation in the frontend
         this.shapes.push(this.shapedRedo.pop())}
         this.displayShapes();
     },
@@ -127,6 +144,7 @@ export default {
     },
 
     setMouseDown:function(event){
+      if(!this.dragging){
       this.canvas.style.cursor="crosshair"; 
       this.loc = this.getPosition(event.clientX,event.clientY);
       //save
@@ -136,20 +154,26 @@ export default {
       this.dragging=true;
       if(this.shapes.length>0){
         //adjust draging
-        this.dragging=!(this.current==='fill'||this.current==='delete'||
-                         this.current==='copy'||this.current==='resize')
+              this.dragging=!(this.current==='fill'||this.current==='delete'||
+        this.current==='copy'||this.current==='resize'||this.current==='move')
         if(this.current==='fill'){
+        //handle fill
+        this.getShapeBack(this.mousedown,'fill')
+        }
+        else if(this.current==='move'){
+        ///////////////////////////
         //backend stuff
-        //let shape_=this.getShapeBack(this.mousedown)
-        //this.setColor(shape_,this.fillColor.value);
-        //this.displayShapes();
-      }
+        //
+        }
         else if(this.current==='delete'){
-        //backend stuff
-        //let shape_=this.getShapeBack(this.mousedown)
-        //this.deleteShape(shape_);
-        //this.displayShapes();
-      }
+        //handle delete
+        this.getShapeBack(this.mousedown,'delete')
+        }
+        else if(this.current==='copy'){
+        //handle copy
+        //this.getShapeBack(this.mousedown,'copy')
+        this.g()
+        }
         else if(this.current==='resize'){
         //backend stuff
         //let shape_=this.getShapeBack(this.mousedown)
@@ -158,37 +182,148 @@ export default {
         //this.resizeShape(shape_2);
         //this.displayShapes();
         //this.resizeBack();
-      }
-      
-      }
+       }
+       
+      }}
+    //check if user gone out of canvas then back
+    else{
+     this.setMouseUp("mouseup");
+    }
     },
-      //get the shape corresponding to mousedown click 
+    g:function(){
+      //create object to hold new shape
+                  //console.log(this.shapes[this.shapes.length-1].dim.x+' '+this.shapes[this.shapes.length-1].dim.y+' '+this.shapes[this.shapes.length-1].dim.height+' '+this.shapes[this.shapes.length-1].dim.width);
+                  let holder=Object.assign({},this.shapes[this.shapes.length-1]);
+                  //update the ID to another one
+                                    holder.id=this.getID();
+                  //update the location of the shape to be 20px from the upper-left corner of the canvas
+                  let dummyDim={x:20,y:20,width:holder.dim.width,height:holder.dim.height}
+                  if(holder.type==='circle'){
+                  dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dummyDim.y=holder.dim.y-(holder.mouse_down.x-(holder.dim.width+20));
+                  }
+                  else if(holder.type==='ellipse'){
+                  dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.height+20));
+                  }
+                  //update the location of the mouse clicks
+                  let dumMouseDown={x:holder.mouse_down.x-(holder.dim.x-20),
+                                    y:holder.mouse_down.y-(holder.dim.y-20)}
+                  let dumMouseUp={x:holder.mouse_up.x-(holder.dim.x-20),
+                                    y:holder.mouse_up.y-(holder.dim.y-20)}
+                  if(holder.type==='circle'){
+                  dumMouseDown.x=holder.dim.width+20;
+                  dumMouseDown.y=holder.dim.width+20;
+                  dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.x-(holder.dim.width+20));
+                  }
+                  else if(holder.type==='ellipse'){
+                  dumMouseDown.x=holder.dim.width+20;
+                  dumMouseDown.y=holder.dim.height+20;
+                  dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.height+20));
+                  }
+                  holder.dim=dummyDim;
+                  holder.mouse_down=dumMouseDown;
+                  holder.mouse_up=dumMouseUp;
+                  //add the copied shape to the shapes then display
+                  this.shapes.push(holder);
+                  this.displayShapes();
+    },
+      //get the ID of the shape corresponding to mouse click an assign it to shapeInAction 
+      //and make some stuff based on the method passed to it
       //backend stuff
-      //////getShapeBack:function(_location){
-      //////},
+    getShapeBack:function(_location,mthd){
+      let url=this.URL+'/paintapp/getId/'+
+      [_location.x].toString+'/'+[_location.y].toString
+      fetch(url).then(
+            response => { return response.json(); }).then(
+                data =>{
+                  for(let i=0;i<this.shapes.length;i++){
+                           if(data===this.shapes[i].id){
+                           this.shapeInActionLocation=i;
+                           break;
+                    }
+                  }
+                  //////////////////////////////////////////////////////////////////
+                  if(mthd==='fill'&&this.shapeInActionLocation>-1){
+                  //set color in frontend
+                  this.setColor(this.shapeInActionLocation,this.fillColor.value);
+                  //refresh the image
+                  this.displayShapes();
+                  //send changes to the backend
+                  let url_=this.URL+'/paintapp/colorfill/'+[this.shapes[this.shapeInActionLocation].id].toString
+                  +'/'+[this.fillColor.value].toString;
+                  fetch(url_).then(
+                      response => { return response.json(); })}
+                  //////////////////////////////////////////////////////////////////
+                  else if(mthd==='delete'&&this.shapeInActionLocation>-1){
+                  //delete shape from front end
+                  this.deleteShape(this.shapeInActionLocation);
+                  //update the image
+                  this.displayShapes();
+                  //send changes to backend
+                  let url_=this.URL+'paintapp/delete/'+[this.shapes[this.shapeInActionLocation].id].toString
+                  fetch(url_).then(
+                      response => { return response.json(); })
+                  }
+                  //////////////////////////////////////////////////////////////////
+                  else if(mthd==='copy'&&this.shapeInActionLocation>-1){
+                  //create object to hold new shape
+                  let holder=Object.assign({},this.shapes[this.shapeInActionLocation]);
+                  //update the ID to another one
+                  holder.id=this.getID();
+                  //update the location of the shape to be 20px from the upper-left corner of the canvas
+                  let dummyDim={x:20,y:20,width:holder.dim.width,height:holder.dim.height}
+                  if(holder.type==='circle'){
+                  dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.width+20));
+                  }
+                  else if(holder.type==='ellipse'){
+                  dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.height+20));
+                  }
+                  //update the location of the mouse clicks
+                  let dumMouseDown={x:holder.mouse_down.x-(holder.dim.x-20),
+                                    y:holder.mouse_down.y-(holder.dim.y-20)}
+                  let dumMouseUp={x:holder.mouse_up.x-(holder.dim.x-20),
+                                    y:holder.mouse_up.y-(holder.dim.y-20)}
+                  if(holder.type==='circle'){
+                  dumMouseDown.x=holder.dim.width+20;
+                  dumMouseDown.y=holder.dim.width+20;
+                  dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.width+20));
+                  }
+                  else if(holder.type==='ellipse'){
+                  dumMouseDown.x=holder.dim.width+20;
+                  dumMouseDown.y=holder.dim.height+20;
+                  dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.height+20));
+                  }
+                  holder.dim=dummyDim;
+                  holder.mouse_down=dumMouseDown;
+                  holder.mouse_up=dumMouseUp;
+                  //add the copied shape to the shapes then display
+                  this.shapes.push(holder);
+                  this.displayShapes();
+                  //send changes to the backend
+                  this.__sendBack(holder);
+                  }
+
+                //set location in action to -1 after performing the actions
+                this.shapeInActionLocation=-1;
+                });
+      },
       //set color for a shape
-      setColor:function(shape_,color_){
+      setColor:function(loc_,color_){
       //check if there was a shape from backend
-      if(shape_!=null){
-      let ID =shape_.id;
-      for(let i=0;i<this.shapes.length;i++){
-        if(ID===this.shapes[i].id){
-          this.shapes[i]._color=color_;
-          break;
-        }
-      }
-      return null;}
+      if(loc_>-1){
+          this.shapes[loc_]._color=color_;}
       },
       //delete a returned shape if found
-      deleteShape:function(shape_){
-      if(shape_!=null){
-      let ID =shape_.id;
-      for(let i=0;i<this.shapes.length;i++){
-        if(ID===this.shapes[i].id){
-          this.shapes.splice(i,1);
-          break;
-        }
-      }}
+      deleteShape:function(_loc){
+      if(_loc>-1){
+          this.shapes.splice(_loc,1);}
       },
 
       resizeShape:function(shape_){
@@ -285,7 +420,7 @@ export default {
         let _mousedown=Object.assign({},this.mousedown);
         let _id=this.getID();
         let _type=this.current;
-        //start with white as a default color
+        //start with white as a default color//id:_id,type:_type,
         return {dim:dimCloned,type:_type,id:_id,
                     _color:'#ffffff',mouse_up:_mouseup,mouse_down:_mousedown}
        },
@@ -295,11 +430,52 @@ export default {
         this.shapes.push(this.getShape())
       }
     },
-    ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////
-    __sendBack:function(/*_shape*/){
+    //send shape to backend with corresponding attributes
+    __sendBack:function(_shape){
     ////////////backend
+    let url=this.URL+'/paintapp/add';
+    //adjust the shape object to the controller in backend
+    //boundingBox_top assumed as y's in top left corner
+    //left assumed as x's in top left corner
+    //fx1,fy1,fx2,fy2 for the line
+    let fx1=(_shape.type==='line')?_shape.mouse_down.x:0;
+    let fy1=(_shape.type==='line')?_shape.mouse_down.y:0;
+    let fx2=(_shape.type==='line')?_shape.mouse_up.x:0;
+    let fy2=(_shape.type==='line')?_shape.mouse_up.y:0;
+    let boundTop=_shape.dim.y;
+    let boundLeft=_shape.dim.x;
+    let boundWidth=_shape.dim.width;
+    let boundHeight=_shape.dim.height;
+    //adjust the circle shape
+    if(_shape.type==='circle'){
+       boundTop=_shape.mouse_down.y-_shape.dim.width;
+       boundLeft=_shape.mouse_down.x-_shape.dim.width;
+       boundWidth=_shape.dim.width*2;
+       boundHeight=_shape.dim.width*2;
+    }
+    //adjust the ellipse shape
+    else if(_shape.type==='ellipse'){
+       boundTop=_shape.mouse_down.y-_shape.dim.height;
+       boundLeft=_shape.mouse_down.x-_shape.dim.width;
+       boundWidth=_shape.dim.width*2;
+       boundHeight=_shape.dim.height*2;
+    }
+    //prepare the object
+    let dat={id:_shape.id,type:_shape.type,lineColor:this.borderColor,
+    fillColor:_shape._color,boundingBox_top:boundTop,
+    boundingBox_left:boundLeft,width:boundWidth,
+    height:boundHeight,f_x1:fx1,f_y1:fy1,f_x2:fx2,f_y2:fy2}
+    //send the shape to backend
+    fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dat),
+          })
+          .then(response => response.json())
     },
+    //assign an ID to the current shape
     getID:function(){
       //start with random number
       let ID=Math.floor(Math.random()*1000000);
@@ -422,7 +598,8 @@ export default {
       this.canvas.addEventListener("mouseup", this.setMouseUp);
       this.fillColor=document.getElementById('colorPick');
       //start with initial value 
-      this.fillColor.value='#ffffff'
+      this.fillColor.value='#ffffff';
+      document.getElementById('colorPick').value='#ffffff'
       this.fillColor.addEventListener("change", this._updateAll, false);
     }
 },
@@ -434,8 +611,6 @@ _updateAll:function(event) {
 
 mounted(){
   document.addEventListener('DOMContentLoaded',this.setupCanvas);
-
-
 }
 }
 
@@ -444,10 +619,9 @@ mounted(){
 <style scoped>
 
 
-
 .box{
     height:80px;
-    width: 1300px;
+    width: 1330px;
     background-image: linear-gradient(rgb(70, 0, 72), rgb(52, 0, 51), rgb(76, 0, 73));
     border-radius: 15px 30px 0px 0px;
     box-shadow: 6px 6px 6px rgb(177, 0, 153) inset;
@@ -458,12 +632,12 @@ mounted(){
 .box-compon,.box-compon-selected{
     position: relative;
     float: left;
-    width: 6.8%;
+    width: 6.32%;
     height: 91%;
     margin: 3px 3px;
     text-align: center;
     padding: 0px 0px;
-    box-shadow: 3px 3px 3px rgb(133, 0, 127) inset;
+    box-shadow: 5px 5px 3px rgb(133, 0, 127) inset;
     cursor: pointer;
     outline:none;
     border-radius: 15px 30px;
@@ -485,9 +659,9 @@ mounted(){
 #colorPick[type=color]{
     position: relative;
     float: right;
-    width: 2.6%;
-    height: 46%;
-    margin: 1.56% 1.36%;
+    width: 2.3%;
+    height: 45%;
+    margin: 1.50% 1.36%;
     text-align: center;
     padding: 0px 0px;
 }
@@ -496,6 +670,4 @@ mounted(){
     border: 5px solid  rgb(52, 0, 51) ;
     border-radius: 0px 0px 10px 20px;
 }
-
 </style>
-
