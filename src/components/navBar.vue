@@ -47,7 +47,6 @@
     </div>
 </template>
 <script>
-
 export default {
    name: 'app',
    data:function(){return{current:'tool',canvas:'',URL:'http://localhost:8080',
@@ -110,32 +109,34 @@ export default {
         //backend stuff
         if(this.shapes.length>0){
         //report the undo process to the backend
-        //let url=this.URL+'/paintapp/undo'
+        let url=this.URL+'/paintapp/undo'
         fetch(url).then(
                       response => { return response.json();})
         //perform the operation in the frontend
         this.shapedRedo.push(this.shapes.pop())}
         this.displayShapes();
         console.log("aaa"+this.shapes.length+' '+this.shapes);
-
     },
+
     redo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
         if(this.shapedRedo.length>0){
         //report the redo process to the backend
-        //let url=this.URL+'/paintapp/redo'
+        let url=this.URL+'/paintapp/redo'
         fetch(url).then(
                       response => { return response.json(); })
         //perform the operation in the frontend
         this.shapes.push(this.shapedRedo.pop())}
         this.displayShapes();
     },
+
     //get position relative to cavan's panel
     getPosition: function(x,y){
       let cav= this.canvas.getBoundingClientRect(); 
       return {x:(x-cav.left),y:(y-cav.top)}
     },
+
     //////////////////////////////////////////////////////////
     updatebounds:function(pointt){
       this.bounds.width=Math.abs(pointt.x-this.mousedown.x)
@@ -240,6 +241,7 @@ export default {
                   dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
                   dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.height+20));
                   }
+
                   //update the location of the mouse clicks
                   let dumMouseDown={x:holder.mouse_down.x-(holder.dim.x-20),
                                     y:holder.mouse_down.y-(holder.dim.y-20)}
@@ -257,6 +259,7 @@ export default {
                   dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
                   dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.height+20));
                   }
+
                   holder.dim=dummyDim;
                   holder.mouse_down=dumMouseDown;
                   holder.mouse_up=dumMouseUp;
@@ -277,6 +280,7 @@ export default {
                    //return the refrence to the selected object
                    this.shapes[this.shapeInActionLocation]=_holder;
                  }
+
                 else if(mthd==='resize'&&this.shapeInActionLocation>-1){
                    //get the quarter 
                    if(!'circleellipse'.includes(this.shapes[this.shapeInActionLocation].type)){
@@ -297,6 +301,7 @@ export default {
                           //right
                           this.quarter=1;}}
                    }
+
                    if(this.shapes[this.shapeInActionLocation].type==='circle'||this.shapes[this.shapeInActionLocation].type==='ellipse'){
                      //in the lower half
                      if(_location.y>=(this.shapes[this.shapeInActionLocation].mouse_down.y)){
@@ -315,6 +320,7 @@ export default {
                           {this.quarter=0;}}
                      }
                    }
+
                    //hold the old shape
                    let _holder=Object.assign({},this.shapes[this.shapeInActionLocation]);
                    //prevent the holded shape from being drawn
@@ -335,11 +341,13 @@ export default {
       if(loc_>-1){
           this.shapes[loc_]._color=color_;}
       },
+
       //delete a returned shape if found
       deleteShape:function(_loc){
       if(_loc>-1){
           this.shapes.splice(_loc,1);}
       },
+
     setMouseMove: function(event){
       this.canvas.style.cursor="crosshair";
       this.loc = this.getPosition(event.clientX,event.clientY);
@@ -348,6 +356,7 @@ export default {
         this.RedrawCanvasImage();
         this.updateboundsActive(this.loc);
       }
+
       if(this.current==='move'&&this.shapeInActionLocation>-1){
         this.shapes[this.shapeInActionLocation].mouse_up.x=this.shapes[this.shapeInActionLocation].mouse_up.x
         -(this.shapes[this.shapeInActionLocation].dim.x-this.loc.x);
@@ -362,6 +371,7 @@ export default {
         this.RedrawCanvasImage();
         this.drawShapeAction(this.shapes[this.shapeInActionLocation]);
       }
+
       if(this.current==='resize'&&this.shapeInActionLocation>-1){
       //check which quarter selected
       if(this.quarter===0){
@@ -370,7 +380,8 @@ export default {
         this.shapes[this.shapeInActionLocation].dim.y=this.loc.y;
       }
       }
-    },displayShapes:function(){
+    },
+    displayShapes:function(){
       //get an array on shapes and display them
       this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
       ////////////////////////////////////////////////////////////////
@@ -386,6 +397,7 @@ export default {
         this.ctx.lineTo(_mouseup.x,_mouseup.y);
         this.ctx.stroke();
       }
+
       else if(typ==='triangle'){
         let polypoints = [{x:dims.x+(dims.width/2),y:dims.y},
         {x:dims.x,y:dims.y+dims.height},
@@ -401,7 +413,6 @@ export default {
       else if(typ==='rectangle'){
       this.ctx.strokeRect(dims.x,dims.y,dims.width,dims.height);
       }
-
       else if(typ==='circle'){
         let radius=dims.width;
         this.ctx.beginPath();
@@ -421,6 +432,7 @@ export default {
       this.RedrawCanvasImage();
       }
       },
+
     setMouseUp: function(event){
       this.canvas.style.cursor="default";
       this.loc = this.getPosition(event.clientX,event.clientY);
@@ -453,6 +465,7 @@ export default {
       }
       this.dragging=false;
     },
+
       //get a shape object from current data
       //shape on format of {dim:x,y upperleft,width,height of the bounding box,type,id,color,mouseup,mousedown}
       getShape:function(){
@@ -466,12 +479,14 @@ export default {
         return {dim:dimCloned,type:_type,id:_id,
                     _color:'#ffffff',mouse_up:_mouseup,mouse_down:_mousedown}
        },
+
       insertShape:function(){
       if((this.mouseup.x!=this.mousedown.x || this.mouseup.y!=this.mousedown.y)){
         //id-color
         this.shapes.push(this.getShape())
       }
     },
+
     //send shape to backend with corresponding attributes
     __sendBack:function(_shape){
     ////////////backend
@@ -495,6 +510,7 @@ export default {
        boundWidth=_shape.dim.width*2;
        boundHeight=_shape.dim.width*2;
     }
+
     //adjust the ellipse shape
     else if(_shape.type==='ellipse'){
        boundTop=_shape.mouse_down.y-_shape.dim.height;
@@ -517,6 +533,7 @@ export default {
           })
           .then(response => response.json())
     },
+
     //assign an ID to the current shape
     getID:function(){
       //start with random number
@@ -533,6 +550,7 @@ export default {
        this.updatebounds(locati);
        this.drawShape();
     },
+
     //for currnt Shape
     drawShape: function(){
       this.ctx.strokeStyle=this.borderColor;
@@ -549,7 +567,6 @@ export default {
         this.ctx.lineTo(this.loc.x, this.loc.y);
         this.ctx.stroke();
       }
-
       else if(this.current==='circle'){
         let radius=this.bounds.width;
         this.ctx.beginPath();
@@ -561,12 +578,10 @@ export default {
         let radiusX = this.bounds.width;
         let radiusY = this.bounds.height;
         this.ctx.beginPath();
-
         this.ctx.ellipse(this.mousedown.x,this.mousedown.y,
                       radiusX, radiusY, 0, 0, Math.PI * 2);
         this.ctx.stroke();//////////////
       } 
-
       else if(this.current === "triangle"){
         let polypoints = [{x:this.bounds.x+(this.bounds.width/2),y:this.bounds.y},
                              {x:this.bounds.x,y:this.bounds.y+this.bounds.height},
@@ -597,7 +612,6 @@ export default {
         this.ctx.lineTo(shape_.mouse_up.x,shape_.mouse_up.y);
         this.ctx.stroke();
       }
-
       else if(shape_.type==='circle'){
         let radius=shape_.dim.width;
         this.ctx.beginPath();
@@ -609,12 +623,11 @@ export default {
         let radiusX = shape_.dim.width;
         let radiusY = shape_.dim.height;
         this.ctx.beginPath();
-
         this.ctx.ellipse(shape_.mouse_down.x,shape_.mouse_down.y,
                       radiusX, radiusY, 0, 0, Math.PI * 2);
         this.ctx.stroke();//////////////
       } 
-
+      
       else if(shape_.type === "triangle"){
         let polypoints = [{x:shape_.dim.x+(shape_.dim.width/2),y:shape_.dim.y},
                              {x:shape_.dim.x,y:shape_.dim.y+shape_.dim.height},
@@ -629,9 +642,9 @@ export default {
         this.ctx.stroke();
       }
       },
+
       //implement the property inside a shape
       colorShape:function(_shape){
-
       //set color for fill
       //check shape dimensions
       if(_shape._color!='#ffffff'){
@@ -673,7 +686,6 @@ export default {
     //Save image
     this.savedImageData = this.ctx.getImageData(0,0,this.canvasWidth,this.canvasHeight);
     },
-
     RedrawCanvasImage:function(){
     //Restore image
     this.ctx.putImageData(this.savedImageData,0,0);},
@@ -694,22 +706,16 @@ export default {
       this.fillColor.addEventListener("change", this._updateAll, false);
     }
 },
-
 //update color after dismiss the cursor
 _updateAll:function(event) {
     this.fillColor.value = event.target.value;
 },
-
 mounted(){
   document.addEventListener('DOMContentLoaded',this.setupCanvas);
 }
 }
-
-
 </script>
 <style scoped>
-
-
 .box{
     height:80px;
     width: 1330px;
@@ -718,7 +724,6 @@ mounted(){
     box-shadow: 6px 6px 6px rgb(177, 0, 153) inset;
     margin: auto;
 }
-
 .box-compon,.box-compon-selected{
     position: relative;
     float: left;
@@ -732,20 +737,16 @@ mounted(){
     outline:none;
     border-radius: 15px 30px;
 }
-
 .box-compon{
   background-color: rgb(85, 0, 99);
 }
-
 .box-compon:hover{
  background-color:rgb(114, 0, 155);
  transition: all 0.36s ease;
 }
-
 .box-compon-selected {
     background-color:rgb(114, 0, 155);
 }
-
 #colorPick[type=color]{
     position: relative;
     float: right;
@@ -755,7 +756,6 @@ mounted(){
     text-align: center;
     padding: 0px 0px;
 }
-
 #my-canvas{
     border: 5px solid  rgb(52, 0, 51) ;
     border-radius: 0px 0px 10px 20px;
