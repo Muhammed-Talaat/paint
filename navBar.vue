@@ -20,6 +20,9 @@
         <div class="box-compon" id="rectangle" @click="tool('rectangle')">
           <img src="https://img.icons8.com/nolan/64/rectangle.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
+        <div class="box-compon" id="square" @click="tool('square')">
+          <img src="https://img.icons8.com/nolan/64/rounded-square.png" style="height:68%;position: relative;margin:13%;"/>
+        </div>
         <div class="box-compon" id="circle" @click="tool('circle')">
           <img src="https://img.icons8.com/nolan/64/filled-circle.png" style="height:68%;position: relative;margin:13%;"/>
         </div>
@@ -80,6 +83,7 @@ export default {
       document.getElementById("line").className = "box-compon";
       document.getElementById("triangle").className = "box-compon";
       document.getElementById("rectangle").className = "box-compon";
+      document.getElementById("square").className = "box-compon";
       document.getElementById("circle").className = "box-compon";
       document.getElementById("ellipse").className = "box-compon";
       document.getElementById("copy").className = "box-compon";
@@ -185,7 +189,7 @@ export default {
       }}
     //check if user gone out of canvas then back
     else{
-     this.setMouseUp("mouseup");
+     //this.setMouseUp("mouseup");
     }
     },
       //get the ID of the shape corresponding to mouse click an assign it to shapeInAction 
@@ -245,6 +249,10 @@ export default {
                   dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
                   dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.height+20));
                   }
+                  else if(holder.type==='square'){
+                  dummyDim.x=holder.dim.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dummyDim.y=holder.dim.y-(holder.mouse_down.y-(holder.dim.width+20));
+                  }
                   //update the location of the mouse clicks
                   let dumMouseDown={x:holder.mouse_down.x-(holder.dim.x-20),
                                     y:holder.mouse_down.y-(holder.dim.y-20)}
@@ -261,6 +269,12 @@ export default {
                   dumMouseDown.y=holder.dim.height+20;
                   dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
                   dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.height+20));
+                  }
+                  else if(holder.type==='square'){
+                  dumMouseDown.x=holder.dim.width+20;
+                  dumMouseDown.y=holder.dim.width+20;
+                  dumMouseUp.x=holder.mouse_up.x-(holder.mouse_down.x-(holder.dim.width+20));
+                  dumMouseUp.y=holder.mouse_up.y-(holder.mouse_down.y-(holder.dim.width+20));
                   }
                   holder.dim=dummyDim;
                   holder.mouse_down=dumMouseDown;
@@ -336,6 +350,7 @@ export default {
         this.updateboundsActive(this.loc);}
       }
       if(this.current==='move'&&this.shapeInActionLocation>-1){
+        //if(this.shapes[this.shapeInActionLocation].type)
         this.shapes[this.shapeInActionLocation].mouse_up.x=this.shapes[this.shapeInActionLocation].mouse_up.x
         -(this.shapes[this.shapeInActionLocation].dim.x-this.loc.x);
         this.shapes[this.shapeInActionLocation].mouse_up.y=this.shapes[this.shapeInActionLocation].mouse_up.y
@@ -346,6 +361,7 @@ export default {
         -(this.shapes[this.shapeInActionLocation].dim.y-this.loc.y);
         this.shapes[this.shapeInActionLocation].dim.x=this.loc.x;
         this.shapes[this.shapeInActionLocation].dim.y=this.loc.y;
+
         this.RedrawCanvasImage();
         this.drawShapeAction(this.shapes[this.shapeInActionLocation]);
       }
@@ -380,7 +396,9 @@ export default {
       else if(typ==='rectangle'){
       this.ctx.strokeRect(dims.x,dims.y,dims.width,dims.height);
       }
-
+      else if(typ==='square'){
+      this.ctx.strokeRect(_mousedown.x-dims.width,_mousedown.y-dims.width,dims.width*2,dims.width*2);
+      }
       else if(typ==='circle'){
         let radius=dims.width;
         this.ctx.beginPath();
@@ -407,9 +425,9 @@ export default {
       this.RedrawCanvasImage();
       this.updatebounds(this.loc);
       this.mouseup=this.loc;
-      ////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////// console
       //insert shapes and sent them to backend if there was a shape
-      if(('circlelinetriangleellipserectangle'.includes(this.current))&&(!isNaN(this.bounds.x))&&(this.dragging))
+      if(('circlelinetriangleellipserectanglesquare'.includes(this.current))&&(!isNaN(this.bounds.x))&&(this.dragging))
       {
       if(this.fixed===''){  
       this.insertShape();
@@ -481,7 +499,7 @@ export default {
     let boundWidth=_shape.dim.width;
     let boundHeight=_shape.dim.height;
     //adjust the circle shape
-    if(_shape.type==='circle'){
+    if(_shape.type==='circle'||_shape.type==='square'){
        boundTop=_shape.mouse_down.y-_shape.dim.width;
        boundLeft=_shape.mouse_down.x-_shape.dim.width;
        boundWidth=_shape.dim.width*2;
@@ -508,7 +526,6 @@ export default {
         +'/'+dat.f_x2+'/'+dat.f_y2
     }
     //send the shape to backend
-    console.log([url,this.current,mthd])
     if(mthd==='copy'){
     fetch(url, {
             method: 'POST',
@@ -553,6 +570,12 @@ export default {
                 this.bounds.width,this.bounds.height)}
       this.ctx.strokeRect(this.bounds.x,this.bounds.y,this.bounds.width,this.bounds.height);
       //color in 129////////////
+      }
+      else if(this.current==='square'){
+        if(flg){ this.ctx.fillRect(this.mousedown.x-this.bounds.width,
+        this.mousedown.y-this.bounds.width,this.bounds.width*2,this.bounds.width*2);}
+        this.ctx.strokeRect(this.mousedown.x-this.bounds.width,
+        this.mousedown.y-this.bounds.width,this.bounds.width*2,this.bounds.width*2);
       }
       else if(this.current==='line'){
         //Draw Line
@@ -612,6 +635,14 @@ export default {
       this.ctx.strokeRect(shape_.dim.x,shape_.dim.y,shape_.dim.width,shape_.dim.height);
       //color in 129////////////  
       }
+      else if(shape_.type==='square'){
+      if(flg){
+        this.ctx.fillRect(shape_.mouse_down.x-shape_.dim.width,shape_.mouse_down.y-shape_.dim.width,
+        shape_.dim.width*2,shape_.dim.width*2);
+      }
+      this.ctx.strokeRect(shape_.mouse_down.x-shape_.dim.width,shape_.mouse_down.y-shape_.dim.width,
+        shape_.dim.width*2,shape_.dim.width*2);
+      }
       else if(shape_.type==='line'){
         //Draw Line
         this.ctx.beginPath();
@@ -668,6 +699,10 @@ export default {
         if(_shape.type==='rectangle'){
         this.ctx.fillRect(_shape.dim.x,_shape.dim.y,
                 _shape.dim.width,_shape.dim.height);
+        }
+        else if(_shape.type==='square'){
+        this.ctx.fillRect(_shape.mouse_down.x-_shape.dim.width,_shape.mouse_down.y-_shape.dim.width,
+                _shape.dim.width*2,_shape.dim.width*2);
         }
         else if(_shape.type==='circle'){
         let radius=_shape.dim.width;
@@ -751,7 +786,7 @@ mounted(){
 .box-compon,.box-compon-selected{
     position: relative;
     float: left;
-    width: 6.32%;
+    width: 5.86%;
     height: 91%;
     margin: 3px 3px;
     text-align: center;
@@ -791,6 +826,9 @@ mounted(){
     border-radius: 0px 0px 10px 20px;
 }
 </style>
+
+
+
 
 
 
