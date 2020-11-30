@@ -57,7 +57,7 @@ export default {
    //current shape location for move/resize/copy
    shapeInActionLocation:-1,
    //refrence to a resized shape
-   fixed:'',holdedColor:'#ffffff',
+   fixed:'',holdedColor:'#ffffff',br:'',
    //mouse location
    mouseup:{x:0,y:0},mousedown:{x:0,y:0},
    //current location of the mouse
@@ -116,24 +116,64 @@ export default {
         //report the undo process to the backend
         let url=this.URL+'/undo'
         fetch(url).then(
-                      response => { return response.json();})
+                      response => { return response.json();}).then(
+                      data => {
+                        this.br=this.convertArr(data);
+                        //console.log(this.br[0]._color);
+                        this.shapes=this.br;
+                        //console.log(this.shapes.length+' '+this.shapes);  
+                        this.displayShapes();
+                      }
+                      )
         //perform the operation in the frontend
-        this.shapedRedo.push(this.shapes.pop())}
-        this.displayShapes();
-        console.log("aaa"+this.shapes.length+' '+this.shapes);
+        }
 
     },
     redo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
-        if(this.shapedRedo.length>0){
+
         //report the redo process to the backend
         let url=this.URL+'/redo'
         fetch(url).then(
-                      response => { return response.json(); })
-        //perform the operation in the frontend
-        this.shapes.push(this.shapedRedo.pop())}
-        this.displayShapes();
+                      response => { return response.json();}).then(
+                      data => {
+                        this.br=this.convertArr(data);
+                        //perform the operation in the frontend   
+                        this.shapes=this.br; 
+                        this.displayShapes();
+                      }
+                      )
+    },
+    //convert array of shapes from backend fromat to frontend format
+    convertArr:function(arr){
+    let _hold=[];
+    arr.forEach(elem =>{
+      //prepare the elements of the object
+      let _id=elem.id;
+      let _type=elem.type;
+      let _fillColor='#'+elem.fillColor;
+      let _mousedown={x:elem.f_x1,y:elem.f_y1}
+      let _mouseup={x:elem.f_x2,y:elem.f_y2}
+      let _dim={x:elem.boundingBox_left,y:elem.boundingBox_top,
+      width:elem.width,height:elem.height}
+     //check odd cases
+     if(elem.type==='circle'||elem.type==='square'){
+       _dim.x=Math.min(_mousedown.x,_mouseup.x);
+       _dim.y=Math.min(_mousedown.y,_mouseup.y);
+       _dim.width=elem.width/2;
+       _dim.height=elem.width/2;
+    }
+    //adjust the ellipse shape
+    else if(elem.type==='ellipse'){
+       _dim.x=Math.min(_mousedown.x,_mouseup.x);
+       _dim.y=Math.min(_mousedown.y,_mouseup.y);
+       _dim.width=elem.width/2;
+       _dim.height=elem.height/2;
+    }
+    _hold.push({dim:_dim,type:_type,id:_id,_color:_fillColor,mouse_up:_mouseup,mouse_down:_mousedown})
+    })
+    return _hold;
     },
     //get position relative to cavan's panel
     getPosition: function(x,y){
@@ -417,6 +457,8 @@ export default {
       this.SaveCanvasImage();
       this.RedrawCanvasImage();
       }
+      this.SaveCanvasImage();
+      this.RedrawCanvasImage();
       },
     setMouseUp: function(event){
       this.canvas.style.cursor="default";
@@ -826,9 +868,6 @@ mounted(){
     border-radius: 0px 0px 10px 20px;
 }
 </style>
-
-
-
 
 
 
