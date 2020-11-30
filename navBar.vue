@@ -266,7 +266,7 @@ export default {
                   this.shapes.push(holder);
                   this.displayShapes();
                   //send changes to the backend
-                  this.__sendBack(holder);
+                  this.__sendBack(holder,'copy');
                   }
                  else if(mthd==='move'&&this.shapeInActionLocation>-1){
                    //hold the old shape
@@ -406,7 +406,8 @@ export default {
       if(('circlelinetriangleellipserectangle'.includes(this.current))&&(!isNaN(this.bounds.x))&&(this.dragging))
       {
       if(this.fixed===''){  
-      this.insertShape();}
+      this.insertShape();
+      this.__sendBack(this.shapes[this.shapes.length-1],'copy')}
       else if(this.fixed!=''){
       if(this.shapeInActionLocation>-1){
       this.shapes[this.shapeInActionLocation]=this.getShape();
@@ -425,15 +426,7 @@ export default {
         //("/resize/{id}/{x}/{y}/{width}/{height}/{f_x1}/{f_y1}/{f_x2}/{f_y2}")
         //send new information to the backend
         //need to update
-        let url=this.URL+'/paintapp/'+this.current+'/'+[this.shapes[this.shapeInActionLocation].id].toString+'/'
-        +[this.shapes[this.shapeInActionLocation].dim.x].toString+'/'+[this.shapes[this.shapeInActionLocation].dim.y].toString
-        +'/'+[this.shapes[this.shapeInActionLocation].dim.width].toString+'/'+[this.shapes[this.shapeInActionLocation].dim.height].toString+'/'+
-        [this.shapes[this.shapeInActionLocation].mouse_down.x].toString+'/'+[this.shapes[this.shapeInActionLocation].mouse_down.y].toString
-        +'/'+[this.shapes[this.shapeInActionLocation].mouse_up.x].toString+'/'+[this.shapes[this.shapeInActionLocation].mouse_up.y].toString
-        fetch(url).then(
-            response => { return response.json(); })
-        this.shapeInActionLocation=-1;
-        this.fixed='';
+        this.__sendBack(this.shapes[this.shapeInActionLocation]);
       }
       this.shapeInActionLocation=-1;
       this.fixed='';
@@ -458,17 +451,19 @@ export default {
       }
     },
     //send shape to backend with corresponding attributes
-    __sendBack:function(_shape){
+    __sendBack:function(_shape,mthd){
     ////////////backend
-    let url=this.URL+'/paintapp/add';
+    let url;
+    if(mthd==='copy')
+    { url=this.URL+'/paintapp/add';}
     //adjust the shape object to the controller in backend
     //boundingBox_top assumed as y's in top left corner
     //left assumed as x's in top left corner
     //fx1,fy1,fx2,fy2 for the line
-    let fx1=(_shape.type==='line')?_shape.mouse_down.x:0;
-    let fy1=(_shape.type==='line')?_shape.mouse_down.y:0;
-    let fx2=(_shape.type==='line')?_shape.mouse_up.x:0;
-    let fy2=(_shape.type==='line')?_shape.mouse_up.y:0;
+    let fx1=_shape.mouse_down.x;
+    let fy1=_shape.mouse_down.y;
+    let fx2=_shape.mouse_up.x;
+    let fy2=_shape.mouse_up.y;
     let boundTop=_shape.dim.y;
     let boundLeft=_shape.dim.x;
     let boundWidth=_shape.dim.width;
@@ -492,7 +487,15 @@ export default {
     fillColor:_shape._color,boundingBox_top:boundTop,
     boundingBox_left:boundLeft,width:boundWidth,
     height:boundHeight,f_x1:fx1,f_y1:fy1,f_x2:fx2,f_y2:fy2}
+    if(mthd!='copy'){
+      url=this.URL+'/paintapp/'+mthd+'/'+[dat.id].toString+'/'
+        +[dat.boundingBox_left].toString+'/'+[dat.boundingBox_top].toString
+        +'/'+[dat.width].toString+'/'+[dat.height].toString+'/'+
+        [dat.f_x1].toString+'/'+[dat.f_y1].toString
+        +'/'+[dat.f_x2].toString+'/'+[dat.f_y2].toString
+    }
     //send the shape to backend
+    if(mthd==='copy'){
     fetch(url, {
             method: 'POST',
             headers: {
@@ -500,7 +503,11 @@ export default {
             },
             body: JSON.stringify(dat),
           })
-          .then(response => response.json())
+          .then(response => response.json())}
+    else{
+     fetch(url).then(
+                      response => { return response.json();}) 
+    }
     },
     //assign an ID to the current shape
     getID:function(){
@@ -690,7 +697,6 @@ mounted(){
 }
 }
 
-
 </script>
 <style scoped>
 
@@ -748,6 +754,17 @@ mounted(){
     border-radius: 0px 0px 10px 20px;
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
