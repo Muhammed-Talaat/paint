@@ -102,13 +102,20 @@ export default {
       this.redo();
       }
       else if(selectedTool==='save'){
-      //some stuff
+      this.save();
       }
       else if(selectedTool==='load'){
-      //some stuff
+      this.load();
       }
     },
+    save:function(){
 
+    },
+    load:function(){
+      //Assuming the request format in my version of the backend:
+      let resource = this.URL+"/load";
+      
+    },
     undo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
