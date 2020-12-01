@@ -4,7 +4,7 @@
         <div class="box-compon" id="save" @click="tool('save')">
           <img src="https://img.icons8.com/ultraviolet/40/000000/save-as.png" style="height:58%;position: relative;margin:13%;"/></div>
       
-           <label class="box-compon" id="load" style="height:73px" > 
+           <label class="box-compon" id="load" style="height:68px" > 
              <img src="https://img.icons8.com/nolan/64/load-cargo.png" style="height:58%;position: relative;margin:13%;"/>
            <input id="filePick" type="file" accept=".json, .xml" @click="tool('load')">
            </label>
@@ -70,7 +70,7 @@ export default {
    ctx:'',savedImageData:'',
    dragging:false,
    //Arrays to held App's shapes
-   shapes:[],shapedRedo:[],
+   shapes:[],shapedRedo:[],uploadedFile:null,
    fillColor:null,borderColor:'#000000',
    linwidth:2,canvasWidth:1320,canvasHeight:612,
    bounds:{
@@ -114,6 +114,9 @@ export default {
       ///this.load();
       }
     },
+
+
+    
 save:function(){
       //Assuming my version of backend
       const link = this.URL+'/save';
@@ -144,7 +147,7 @@ save:function(){
     },
     load:function(event){
       //Assuming the request format in my version of the backend:
-      const link = this.URL+"/load";
+      const link = this.URL+"/upload";
       const file = event.target.files[0];
       fetch(link, {
         method:'POST',
@@ -154,14 +157,29 @@ save:function(){
         },
         body:file
       }).then(
-        (r)=> r.json()
-      ).then(
-          data => this.reset(data)
+          data => {
+          this.reset(data)
+          let url=this.URL+'/get'
+           fetch(url).then(
+          response =>{return response.json()}).then(data =>{
+            this.br=this.convertArr(data);
+            //perform the operation in the frontend   
+            this.shapes=this.br; 
+            console.log(data.length);
+            this.displayShapes();
+            this.SaveCanvasImage();
+            this.RedrawCanvasImage();
+          })
+          }
       );
     },
     reset:function(response){
       //TODO reset app and parse response
       console.log(response);
+      this.shapes=[]
+      this.displayShapes();
+      this.SaveCanvasImage();
+      this.RedrawCanvasImage();
     },
     undo:function(){
         /////////////////////////////////////////////////////////////
@@ -177,6 +195,8 @@ save:function(){
                         this.shapes=this.br;
                         //console.log(this.shapes.length+' '+this.shapes);  
                         this.displayShapes();
+                        this.SaveCanvasImage();
+                        this.RedrawCanvasImage();
                       }
                       )
         //perform the operation in the frontend
@@ -196,6 +216,8 @@ save:function(){
                         //perform the operation in the frontend   
                         this.shapes=this.br; 
                         this.displayShapes();
+                        this.SaveCanvasImage();
+                        this.RedrawCanvasImage();
                       }
                       )
     },
@@ -667,12 +689,14 @@ save:function(){
       this.ctx.strokeRect(this.bounds.x,this.bounds.y,this.bounds.width,this.bounds.height);
       //color in 129////////////
       }
+      
       else if(this.current==='square'){
         if(flg){ this.ctx.fillRect(this.mousedown.x-this.bounds.width,
         this.mousedown.y-this.bounds.width,this.bounds.width*2,this.bounds.width*2);}
         this.ctx.strokeRect(this.mousedown.x-this.bounds.width,
         this.mousedown.y-this.bounds.width,this.bounds.width*2,this.bounds.width*2);
       }
+
       else if(this.current==='line'){
         //Draw Line
         this.ctx.beginPath();
@@ -689,6 +713,7 @@ save:function(){
         if(flg){this.ctx.fill();}
         this.ctx.stroke();//////////////
       }
+
       else if(this.current === "ellipse"){
         let radiusX = this.bounds.width;
         let radiusY = this.bounds.height;
@@ -872,11 +897,12 @@ mounted(){
 
 
 .box{
-    height:80px;
+    height:83px;
     width: 1330px;
-    background-image: linear-gradient(rgb(70, 0, 72), rgb(52, 0, 51), rgb(76, 0, 73));
+    background-image: linear-gradient(rgb(160, 160, 160), rgb(142, 142, 142),rgb(132,132,132));
     border-radius: 15px 30px 0px 0px;
-    box-shadow: 6px 6px 6px rgb(177, 0, 153) inset;
+    box-shadow: 6px 6px 6px rgb(240, 240, 240) inset;
+     /*box-shadow:         inset 3px 3px 10px #ffffff;*/
     margin: auto;
 }
 
@@ -884,29 +910,30 @@ mounted(){
 .box-compon,.box-compon-selected{
     position: relative;
     float: left;
-    width: 5.86%;
-    height: 91%;
-    margin: 3px 3px;
+    width: 5.36%;
+    height: 82%;
+    margin: 7px 6.3px;
     text-align: center;
     padding: 0px 0px;
-    box-shadow: 5px 5px 3px rgb(133, 0, 127) inset;
+    box-shadow: 5px 5px 3px rgb(152, 152, 152) inset;
+    box-shadow:         inset 0px 0px 7px #404040;
     cursor: pointer;
     outline:none;
-    border-radius: 15px 30px;
+    border-radius: 38px 38px;
 }
 
 .box-compon{
-  background-color: rgb(85, 0, 99);
+  background-color: rgb(255, 255, 255);
 }
 
 .box-compon:hover{
- background-color:rgb(114, 0, 155);
+ background-color:rgb(171, 222, 228);
  transition: all 0.36s ease;
 }
 
-
-.box-compon-selected {
-    background-color:rgb(114, 0, 155);
+.box-compon-selected{
+  background-color:rgb(171, 222, 228);
+  box-shadow:  0px 0px 7px #7b7b7b;
 }
 
 #colorPick[type=color]{
@@ -919,7 +946,7 @@ mounted(){
     padding: 0px 0px;
 }
 #my-canvas{
-    border: 5px solid  rgb(52, 0, 51) ;
+    border: 5px solid  rgb(132, 132, 132) ;
     border-radius: 0px 0px 10px 20px;
 }
 
