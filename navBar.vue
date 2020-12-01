@@ -3,8 +3,12 @@
     <div class="box">
         <div class="box-compon" id="save" @click="tool('save')">
           <img src="https://img.icons8.com/ultraviolet/40/000000/save-as.png" style="height:58%;position: relative;margin:13%;"/></div>
-        <div class="box-compon" id="load" @click="tool('load')">
-         <img src="https://img.icons8.com/nolan/64/load-cargo.png" style="height:58%;position: relative;margin:13%;"/></div>
+      
+           <label class="box-compon" id="load" style="height:73px" > 
+             <img src="https://img.icons8.com/nolan/64/load-cargo.png" style="height:58%;position: relative;margin:13%;"/>
+           <input id="filePick" type="file" accept=".json, .xml" @click="tool('load')">
+           </label>
+        
         <div class="box-compon" id="undo" @click="tool('undo')">
           <img src="https://img.icons8.com/nolan/64/undo.png" style="height:58%;position: relative;margin:13%;"/>
         </div>
@@ -103,12 +107,62 @@ export default {
       }
       else if(selectedTool==='save'){
       //some stuff
+      this.save();
       }
       else if(selectedTool==='load'){
       //some stuff
+      ///this.load();
       }
     },
-
+save:function(){
+      //Assuming my version of backend
+      const link = this.URL+'/save';
+      let needjson = confirm("Save as JSON? OK == yes, json, Cancel == no, xml");
+      fetch(link,{
+          method:'GET',
+          headers:{
+            'Accept':needjson?'application/json':'application/xml',
+            'mode':'no-cors'
+          }
+          }).then(
+            r => r.blob()
+              ).then(function (data){
+                let filename = needjson?"canvas.json":"canvas.xml";
+                if(window.navigator.msSaveOrOpenBlob) {
+                  window.navigator.msSaveBlob(data, filename);
+                }
+                else{
+                  var elem = window.document.createElement('a');
+                  elem.href = window.URL.createObjectURL(data);
+                  elem.download = filename;
+                  document.body.appendChild(elem);
+                  elem.click();
+                  document.body.removeChild(elem);
+                }
+              
+      });
+    },
+    load:function(event){
+      //Assuming the request format in my version of the backend:
+      const link = this.URL+"/load";
+      const file = event.target.files[0];
+      fetch(link, {
+        method:'POST',
+        headers:{
+          'Content-Type': file.type,
+          'mode':'no-cors'
+        },
+        body:file
+      }).then(
+        (r)=> r.json()
+      ).then(
+          data => this.reset(data)
+      );
+    },
+    reset:function(response){
+      //TODO reset app and parse response
+      console.log(response);
+    },
     undo:function(){
         /////////////////////////////////////////////////////////////
         //backend stuff
@@ -808,6 +862,8 @@ _updateAll:function(event) {
 
 mounted(){
   document.addEventListener('DOMContentLoaded',this.setupCanvas);
+  this.uploadedFile = document.getElementById("filePick");
+  this.uploadedFile.addEventListener('change',(event)=>{this.load(event);});
 }
 }
 
@@ -862,11 +918,21 @@ mounted(){
     text-align: center;
     padding: 0px 0px;
 }
-
 #my-canvas{
     border: 5px solid  rgb(52, 0, 51) ;
     border-radius: 0px 0px 10px 20px;
 }
+
+input[type="file"] {
+    display: none;
+}
+.custom-file-upload {
+    border: 1px solid #ccc;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
 </style>
 
 
