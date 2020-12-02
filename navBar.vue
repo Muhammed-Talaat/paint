@@ -149,10 +149,16 @@ save:function(){
       //Assuming the request format in my version of the backend:
       const link = this.URL+"/upload";
       const file = event.target.files[0];
+      let type;
+      if(file.name.slice(file.name.length-4,file.name.length)==".xml"){
+        type = "application/xml";
+      }else{
+        type = "application/json";
+      }
       fetch(link, {
         method:'POST',
         headers:{
-          'Content-Type': file.type,
+          'Content-Type': type,
           'mode':'no-cors'
         },
         body:file
